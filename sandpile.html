@@ -1,0 +1,124 @@
+<html>
+    <head>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.0.0/p5.js"></script>
+        <script src="https://unpkg.com/p5.createloop@0.2.8/dist/p5.createloop.js"></script>
+        <style>
+        html, body, canvas{
+            height:100%;
+            width:100%;
+            margin:0;
+            padding:0;
+        }
+        body {
+          overflow: hidden;
+        }
+        </style>
+    </head>
+    <body>
+        <script>
+            let canvas;
+            let colors = [];
+            let max = 8;
+            let field = [];
+            let tempField = [];
+            let toUpdate;
+            let size = 61;
+            let sizePixel = 10;
+            let canvasSize = size*sizePixel;
+            let sources = [];
+            for(let i=0; i<size; i++){
+                field.push([]);
+                tempField.push([]);
+                for(let j=0; j<size; j++){
+                    field[i].push(0);
+                    tempField[i].push(0);
+                }
+            }
+            function setup() {
+                canvas = createCanvas(canvasSize, canvasSize);
+                background(0);
+                colors.push(color('#92c3ff'));
+                colors.push(color('#72a3ef'));
+                colors.push(color('#ffad72'));
+                colors.push(color('#ef8d52'));
+                colors.push(color('#fff372'));
+                colors.push(color('#efd352'));
+                colors.push(color('#e872ff'));
+                colors.push(color('#c852ef'));
+                frameRate(20);
+                sources.push({x:floor(size/4.0), y:floor(size/4.0)});
+                sources.push({x:floor(size*3/4.0), y:floor(size/4.0)});
+                sources.push({x:floor(size/4.0), y:floor(size*3/4.0)});
+                sources.push({x:floor(size*3/4.0), y:floor(size*3/4.0)});
+                sources.push({x:floor(size/2.0), y:floor(size/2.0)});
+            }
+
+            function draw() {
+                doThing();
+                background(0);
+                noStroke();
+                for(let i=0; i<size; i++){
+                    for(let j=0; j<size; j++){
+                        fill(colors[max-1]);
+                        if(field[i][j] < max)
+                            fill(colors[field[i][j]]);
+                        rect(i*sizePixel, j*sizePixel, sizePixel, sizePixel);
+                    }
+                }
+            }
+            
+            function addGrain(a, b){
+                if(a >= size || a < 0 || b >= size || b < 0)return false;
+                tempField[a][b]++;
+                return true;
+            }
+            
+            function distribute(i, j){
+                if(tempField[i][j] >= max){
+                    if(addGrain(i-1, j))toUpdate.push({x:i-1, y:j});
+                    if(addGrain(i+1, j))toUpdate.push({x:i+1, y:j});
+                    if(addGrain(i, j-1))toUpdate.push({x:i, y:j-1});
+                    if(addGrain(i, j+1))toUpdate.push({x:i, y:j+1});
+                        if(addGrain(i-1, j-1))toUpdate.push({x:i-1, y:j-1});
+                        if(addGrain(i+1, j+1))toUpdate.push({x:i+1, y:j+1});
+                        if(addGrain(i+1, j-1))toUpdate.push({x:i+1, y:j-1});
+                        if(addGrain(i-1, j+1))toUpdate.push({x:i-1, y:j+1});
+                    tempField[i][j] -= max;
+                    toUpdate.push({x:i, y:j});
+                }
+            }
+            
+            function updateField(){
+                for(let i=toUpdate.length-1; i>=0; i--){
+                    let x = toUpdate[i].x;
+                    let y = toUpdate[i].y;
+                    field[x][y] = tempField[x][y];
+                }
+            }
+            
+            function doThing(){
+                for(let i=0; i<sources.length; i++){
+                    field[sources[i].x][sources[i].y] += max;
+                    tempField[sources[i].x][sources[i].y] += max;
+                }
+                toUpdate = [];
+                for(let i=0; i<size; i++){
+                    for(let j=0; j<size; j++){
+                        distribute(i, j);
+                    }
+                }
+                updateField();
+                while(toUpdate.length > 0){
+                    for(let i=toUpdate.length-1; i>=0; i--){
+                        let x = toUpdate[i].x;
+                        let y = toUpdate[i].y;
+                        distribute(x, y);
+                        toUpdate.splice(i, 1);
+                    }
+                    updateField();
+                }
+            }
+            
+        </script>
+    </body>
+</html>
