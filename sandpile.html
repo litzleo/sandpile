@@ -18,12 +18,12 @@
         <script>
             let canvas;
             let colors = [];
-            let max = 8;
+            const max = 8;
             let field = [];
             let tempField = [];
             let toUpdate;
-            let size = 61;
-            let sizePixel = 10;
+            const size = 61;
+            const sizePixel = 10;
             let canvasSize = size*sizePixel;
             let sources = [];
             for(let i=0; i<size; i++){
@@ -37,6 +37,8 @@
             function setup() {
                 canvas = createCanvas(canvasSize, canvasSize);
                 background(0);
+                frameRate(20);
+                //admittedly it'd be fun to have the colors and the sources (sources are pixels that receive new grain of sands every frame) be customizable, maybe for another day
                 colors.push(color('#92c3ff'));
                 colors.push(color('#72a3ef'));
                 colors.push(color('#ffad72'));
@@ -45,7 +47,6 @@
                 colors.push(color('#efd352'));
                 colors.push(color('#e872ff'));
                 colors.push(color('#c852ef'));
-                frameRate(20);
                 sources.push({x:floor(size/4.0), y:floor(size/4.0)});
                 sources.push({x:floor(size*3/4.0), y:floor(size/4.0)});
                 sources.push({x:floor(size/4.0), y:floor(size*3/4.0)});
@@ -62,32 +63,37 @@
                         fill(colors[max-1]);
                         if(field[i][j] < max)
                             fill(colors[field[i][j]]);
+                        //drawing a rectangle for every pixel might not be the best idea, there should be a way in p5.js do update pixels in a picture, or maybe I could just draw only the updated pixels and not refresh the screen every frame by calling background()
                         rect(i*sizePixel, j*sizePixel, sizePixel, sizePixel);
                     }
                 }
             }
             
+            //Not much to explain, this function adds 1 grain of sands to one pixel, it also checks if that pixel exists
             function addGrain(a, b){
                 if(a >= size || a < 0 || b >= size || b < 0)return false;
                 tempField[a][b]++;
                 return true;
             }
             
+            //the way sandpiles work is that if a pixel has too many grains it must distribute them to it's neighbours, you can choose if you want the neighbours only be the 4 cardinal ones or have the diagonal ones count too, I choose the latter
             function distribute(i, j){
                 if(tempField[i][j] >= max){
+                    //if I ever will refractor this I'll make a function that given an offset does what everyone of the next 8 lines does, the way I did it is a bit tedious and redoundant
                     if(addGrain(i-1, j))toUpdate.push({x:i-1, y:j});
                     if(addGrain(i+1, j))toUpdate.push({x:i+1, y:j});
                     if(addGrain(i, j-1))toUpdate.push({x:i, y:j-1});
                     if(addGrain(i, j+1))toUpdate.push({x:i, y:j+1});
-                        if(addGrain(i-1, j-1))toUpdate.push({x:i-1, y:j-1});
-                        if(addGrain(i+1, j+1))toUpdate.push({x:i+1, y:j+1});
-                        if(addGrain(i+1, j-1))toUpdate.push({x:i+1, y:j-1});
-                        if(addGrain(i-1, j+1))toUpdate.push({x:i-1, y:j+1});
+                    if(addGrain(i-1, j-1))toUpdate.push({x:i-1, y:j-1});
+                    if(addGrain(i+1, j+1))toUpdate.push({x:i+1, y:j+1});
+                    if(addGrain(i+1, j-1))toUpdate.push({x:i+1, y:j-1});
+                    if(addGrain(i-1, j+1))toUpdate.push({x:i-1, y:j+1});
                     tempField[i][j] -= max;
                     toUpdate.push({x:i, y:j});
                 }
             }
             
+            //in order for the program to work properly I have to basically use 2 grids, the updates are only made to tempField until every update has happened for the frame, then everything gets copied to Field
             function updateField(){
                 for(let i=toUpdate.length-1; i>=0; i--){
                     let x = toUpdate[i].x;
@@ -96,6 +102,8 @@
                 }
             }
             
+            //I'm sorry for my luck of imagination for my naming convention, I mean, naming things is hard
+            //anyway the gist of this function is to add some grains to the sources, then for every pixel that has too many grains it makes it distribute them, which could cause other pixels to need to do the same, the way I handle it is decently efficient as I keep track of the pixels that might need an update on an array and I keep on checking only them and removing them if necessary, I don't need to constantly check the entire grid
             function doThing(){
                 for(let i=0; i<sources.length; i++){
                     field[sources[i].x][sources[i].y] += max;
